@@ -1,0 +1,39 @@
+name: 'Upload Supabase Docs'
+description: 'Upload project documentation to Supabase storage and database'
+author: 'Rafał Berezin'
+branding:
+  icon: 'upload-cloud'
+  color: 'blue'
+
+inputs:
+  github-token:
+    description: 'GitHub token for accessing repository data.'
+    required: true
+  supabase-url:
+    description: 'Supabase project URL.'
+    required: true
+  supabase-key:
+    description:
+      'Supabase project API key with select, insert, update and delete
+      permissions in the specified storage bucket.'
+    required: true
+  docs-path:
+    description: 'Path to documentation directory'
+    required: true
+    default: './docs'
+  meta-path:
+    description: 'Path to metadata file. (.yml, .yaml or .json)'
+    required: true
+    default: './docs/meta.yml'
+  db-table:
+    description: 'Database table that stores project metadata'
+    required: true
+    default: 'projects'
+  storage-bucket:
+    description: 'Supabase storage bucket that stores documentation files'
+    required: true
+    default: 'project-docs'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
