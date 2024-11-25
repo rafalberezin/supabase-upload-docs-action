@@ -18,9 +18,13 @@
 	"engines": {
 		"node": ">=21"
 	},
-	"scripts": {},
+	"scripts": {
+		"format:write": "npx prettier --write .",
+		"format:check": "npx prettier --check ."
+	},
 	"devDependencies": {
 		"@types/node": "^22.9.3",
+		"prettier": "^3.3.3",
 		"typescript": "^5.7.2"
 	}
 }
