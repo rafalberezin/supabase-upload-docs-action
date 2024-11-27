@@ -40,8 +40,8 @@ export async function getRepositoryDetail(
 		}
 
 		return {
-			name: context.repo.repo,
-			summary: repoResponse.data.description || undefined,
+			title: context.repo.repo,
+			description: repoResponse.data.description || undefined,
 			source: repoResponse.data.html_url,
 			license: repoResponse.data.license?.name,
 			latest_version: latestVersion
@@ -51,25 +51,18 @@ export async function getRepositoryDetail(
 			`Could not retrieve repository details: ${error instanceof Error ? error.message : 'Unknown Error'}`
 		)
 		return {
-			name: context.repo.repo,
-			source: ''
+			title: context.repo.repo
 		}
 	}
 }
 
 export function processName(
-	name: string,
-	trimFile: boolean = true,
+	fileName: string,
 	slugTracker?: SlugTracker
 ): { slug: string; title: string } {
-	if (trimFile) name = name.replaceAll(/^\d+-|\.md$/g, '')
-
-	const slug = generateSlug(name, slugTracker)
-
-	const title = slug
-		.split('-')
-		.map(word => word.charAt(0).toUpperCase() + word.slice(1))
-		.join(' ')
+	const trimmedName = fileName.replaceAll(/^\d+-|\.md$/g, '')
+	const slug = generateSlug(trimmedName, slugTracker)
+	const title = slugToTitle(slug)
 
 	return {
 		slug,
@@ -77,7 +70,7 @@ export function processName(
 	}
 }
 
-function generateSlug(name: string, slugTracker?: SlugTracker) {
+export function generateSlug(name: string, slugTracker?: SlugTracker) {
 	const baseSlug = kebabCase(name)
 	if (slugTracker === undefined) return baseSlug
 
@@ -88,8 +81,15 @@ function generateSlug(name: string, slugTracker?: SlugTracker) {
 	return `${baseSlug}-${slugTracker[baseSlug]++}`
 }
 
+export function slugToTitle(slug: string): string {
+	return slug
+		.split('-')
+		.map(word => word.charAt(0).toUpperCase() + word.slice(1))
+		.join(' ')
+}
+
 export function buildDatabaseEntry(
-	name: string,
+	title: string,
 	slug: string,
 	articles: ArticleMap,
 	metadata: ProjectMetadata,
@@ -102,7 +102,7 @@ export function buildDatabaseEntry(
 		...metadata,
 		articles,
 		slug,
-		name,
+		title,
 		versions: updateVersions(
 			existingEntry?.versions,
 			repoDetails.latest_version

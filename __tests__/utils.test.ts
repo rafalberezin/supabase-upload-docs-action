@@ -45,24 +45,22 @@ describe('Utility Function', () => {
 	})
 
 	describe('processName', () => {
-		it('should convert names to slugs and titles', () => {
-			const { slug, title } = processName('Hello World')
-			expect(slug).toBe('hello-world')
-			expect(title).toBe('Hello World')
+		it('should convert file and directory names to slugs and titles', () => {
+			const { slug: fileSlug, title: fileTitle } =
+				processName('00-Hello World.md')
+			expect(fileSlug).toBe('hello-world')
+			expect(fileTitle).toBe('Hello World')
+
+			const { slug: dirSlug, title: dirTitle } = processName('01-nested_dir')
+			expect(dirSlug).toBe('nested-dir')
+			expect(dirTitle).toBe('Nested Dir')
 		})
 
-		it('should handle numeric prefixes', () => {
-			const { slug, title } = processName('01-Getting_started.md', true)
-			expect(slug).toBe('getting-started')
-			expect(title).toBe('Getting Started')
-		})
-
-		it('should postfix repeating inputs', () => {
+		it('should postfix repeating slugs', () => {
 			const slugs = {}
 
 			const { slug: slug1, title: title1 } = processName(
 				'01-Getting_started.md',
-				true,
 				slugs
 			)
 			expect(slug1).toBe('getting-started')
@@ -72,8 +70,7 @@ describe('Utility Function', () => {
 			})
 
 			const { slug: slug2, title: title2 } = processName(
-				'01-Getting_started.md',
-				true,
+				'01-Getting Started.md',
 				slugs
 			)
 			expect(slug2).toBe('getting-started-1')
@@ -91,7 +88,7 @@ describe('Utility Function', () => {
 		}
 		const mockMinimalMetadata: ProjectMetadata = {}
 		const mockMinimalRepoDetails: RepositoryDetails = {
-			name: 'test-project',
+			title: 'test-project',
 			source: 'https://github.com/test/test-project'
 		}
 
@@ -106,7 +103,7 @@ describe('Utility Function', () => {
 			)
 
 			expect(entry).toEqual({
-				name: 'Test Project',
+				title: 'Test Project',
 				slug: 'test-project',
 				articles: mockMinimalArticles,
 				source: 'https://github.com/test/test-project'
@@ -135,8 +132,8 @@ describe('Utility Function', () => {
 			]
 		}
 		const mockFilledMetadata: ProjectMetadata = {
-			name: 'Test Project',
-			summary: 'A test project',
+			title: 'Test Project',
+			description: 'A test project',
 			tags: {
 				'tag-1': 'blue',
 				'tag-2': 'red'
@@ -147,16 +144,16 @@ describe('Utility Function', () => {
 			}
 		}
 		const mockFilledRepoDetails: RepositoryDetails = {
-			name: 'test-repo',
+			title: 'test-repo',
 			source: 'https://github.com/test/test-project',
-			summary: 'repo description',
+			description: 'repo description',
 			license: 'MIT',
 			latest_version: 'v1.1.0'
 		}
 		const mockExistingEntry: DatabaseEntry = {
-			name: 'Old Test Project',
+			title: 'Old Test Project',
 			slug: 'old-test-project',
-			summary: 'An old test project',
+			description: 'An old test project',
 			source: 'https://github.com/test/old-test-project',
 			articles: mockMinimalArticles,
 			latest_version: 'v1.0.0',
@@ -181,9 +178,9 @@ describe('Utility Function', () => {
 			)
 
 			expect(entry).toEqual({
-				name: 'Test Project',
+				title: 'Test Project',
 				slug: 'test-project',
-				summary: 'A test project',
+				description: 'A test project',
 				license: 'MIT',
 				source: 'https://github.com/test/test-project',
 				latest_version: 'v1.1.0',

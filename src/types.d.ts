@@ -1,31 +1,27 @@
 export interface ProjectMetadata {
-	name?: string
-	summary?: string
-	tags?: Record<string, string>
-	featured?: boolean
-	meta?: unknown
+	slug?: string
+	title?: string
+	description?: string
+	[key: string]: unknown
 }
 
 export interface RepositoryDetails {
-	name: string
-	source: string
-	summary?: string
+	title: string
+	description?: string
 	license?: string
+	source?: string
 	latest_version?: string
 }
 
 export interface DatabaseEntry {
 	slug: string
-	name: string
-	summary?: string
+	title: string
+	description?: string
 	license?: string
 	source?: string
 	latest_version?: string
 	versions?: string[]
 	articles?: ArticleMap
-	tags?: Record<string, string>
-	featured?: boolean
-	meta?: unknown
 	[key: string]: unknown
 }
 

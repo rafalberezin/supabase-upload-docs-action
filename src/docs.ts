@@ -23,7 +23,7 @@ export function generateArticleMap(docsPath: string): ArticleMap {
 			const fullLocalPath = path.posix.join(localPath, file)
 			const stats = fs.statSync(fullLocalPath)
 
-			const { slug, title } = processName(file, true, slugs)
+			const { slug, title } = processName(file, slugs)
 			const fullSlugPath = path.posix.join(slugPath, slug)
 
 			if (stats.isDirectory()) {

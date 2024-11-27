@@ -4,8 +4,9 @@ import { createClient } from '@supabase/supabase-js'
 import {
 	buildDatabaseEntry,
 	filterSuccessfulUploads,
+	generateSlug,
 	getRepositoryDetail,
-	processName,
+	slugToTitle,
 	validateDocsPath
 } from './utils'
 import { loadMetadata } from './meta'
@@ -34,10 +35,10 @@ async function run() {
 
 		const repoDetails = await getRepositoryDetail(octokit, github.context)
 		const metadata = loadMetadata(metaPath)
-		const { title: name, slug } = processName(
-			metadata.name ?? repoDetails.name,
-			false
-		)
+
+		const titleSlug = generateSlug(metadata.title ?? repoDetails.title)
+		const title = slugToTitle(titleSlug)
+		const slug = metadata.slug ? generateSlug(metadata.slug) : titleSlug
 
 		const articles = generateArticleMap(docsPath)
 		const successfulUploadPaths = await manageDocumentStorage(
@@ -64,7 +65,7 @@ async function run() {
 		)
 
 		const newDatabaseEntry = buildDatabaseEntry(
-			name,
+			title,
 			slug,
 			articles,
 			metadata,
