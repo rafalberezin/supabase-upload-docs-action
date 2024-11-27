@@ -25,7 +25,7 @@
 		"lint": "pnpx eslint .",
 		"lint:fix": "pnpx eslint . --fix",
 		"test": "pnpx jest",
-		"package": "pnpx ncc build src/index.ts -o dist --source-map --license licenses.txt",
+		"package": "pnpm ncc build src/index.ts -o dist --source-map --license licenses.txt",
 		"all": "pnpm run format:write && pnpm run lint && pnpm run test && pnpm run package"
 	},
 	"devDependencies": {
