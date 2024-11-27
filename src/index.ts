@@ -3,7 +3,7 @@ import * as github from '@actions/github'
 import { createClient } from '@supabase/supabase-js'
 import {
 	buildDatabaseEntry,
-	cleanArticlesMap,
+	filterSuccessfulUploads,
 	getRepositoryDetail,
 	processName,
 	validateDocsPath
@@ -40,9 +40,17 @@ async function run() {
 		)
 
 		const articles = generateArticleMap(docsPath)
-		await manageDocumentStorage(supabase, storageBucket, slug, articles)
+		const successfulUploadPaths = await manageDocumentStorage(
+			supabase,
+			storageBucket,
+			slug,
+			articles
+		)
 
-		cleanArticlesMap(articles)
+		const uploadedArticles = filterSuccessfulUploads(
+			articles,
+			successfulUploadPaths
+		)
 
 		const { data: existingDatabaseEntry }: { data: DatabaseEntry | null } =
 			await supabase.from(dbTable).select('*').eq('slug', slug).single()
@@ -51,7 +59,7 @@ async function run() {
 			supabase,
 			storageBucket,
 			slug,
-			articles,
+			uploadedArticles,
 			existingDatabaseEntry?.articles
 		)
 

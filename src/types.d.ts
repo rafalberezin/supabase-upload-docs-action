@@ -34,9 +34,7 @@ export interface ArticleMap {
 	children: ArticleMapChildren
 }
 
-export interface ArticleMapChildren {
-	[key: string]: Directory | Article
-}
+export type ArticleMapChildren = (Directory | Article)[]
 
 export interface Directory {
 	type: 'directory'
@@ -50,3 +48,5 @@ export interface Article {
 	path: string
 	_localPath?: string
 }
+
+export type SlugTracker = Record<string, number>

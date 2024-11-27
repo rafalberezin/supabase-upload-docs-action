@@ -7,7 +7,8 @@ import type {
 	ArticleMapChildren,
 	DatabaseEntry,
 	ProjectMetadata,
-	RepositoryDetails
+	RepositoryDetails,
+	SlugTracker
 } from './types'
 
 export function validateDocsPath(docsPath: string): void {
@@ -42,7 +43,7 @@ export async function getRepositoryDetail(
 			name: context.repo.repo,
 			summary: repoResponse.data.description || undefined,
 			source: repoResponse.data.html_url,
-			license: repoResponse.data.license?.name || 'No License',
+			license: repoResponse.data.license?.name,
 			latest_version: latestVersion
 		}
 	} catch (error) {
@@ -58,11 +59,12 @@ export async function getRepositoryDetail(
 
 export function processName(
 	name: string,
-	trimFile: boolean = true
+	trimFile: boolean = true,
+	slugTracker?: SlugTracker
 ): { slug: string; title: string } {
 	if (trimFile) name = name.replaceAll(/^\d+-|\.md$/g, '')
 
-	const slug = kebabCase(name)
+	const slug = generateSlug(name, slugTracker)
 
 	const title = slug
 		.split('-')
@@ -73,6 +75,17 @@ export function processName(
 		slug,
 		title
 	}
+}
+
+function generateSlug(name: string, slugTracker?: SlugTracker) {
+	const baseSlug = kebabCase(name)
+	if (slugTracker === undefined) return baseSlug
+
+	if (!(baseSlug in slugTracker)) {
+		slugTracker[baseSlug] = 1
+		return baseSlug
+	}
+	return `${baseSlug}-${slugTracker[baseSlug]++}`
 }
 
 export function buildDatabaseEntry(
@@ -97,47 +110,67 @@ export function buildDatabaseEntry(
 	}
 }
 
-export function cleanArticlesMap(article: ArticleMap): ArticleMap {
-	function removeLocalPaths(children: ArticleMapChildren) {
-		Object.values(children).forEach(child => {
-			if (child.type === 'article') {
-				delete child._localPath
-			} else {
-				removeLocalPaths(child.children)
-			}
-		})
+export function filterSuccessfulUploads(
+	articleMap: ArticleMap,
+	successfulPaths: Set<string>
+): ArticleMap {
+	function pruneChildren(children: ArticleMapChildren): ArticleMapChildren {
+		return children
+			.map(child => {
+				if (child.type === 'article') {
+					return child._localPath && successfulPaths.has(child.path)
+						? {
+								type: 'article',
+								title: child.title,
+								path: child.path
+								// Do not include _localPath
+							}
+						: null
+				} else {
+					const prunedChildren = pruneChildren(child.children)
+					return prunedChildren.length > 0
+						? {
+								type: 'directory',
+								title: child.title,
+								children: prunedChildren
+							}
+						: null
+				}
+			})
+			.filter(Boolean) as ArticleMapChildren
 	}
 
-	removeLocalPaths(article.children)
-	return article
+	return {
+		type: 'root',
+		children: pruneChildren(articleMap.children)
+	}
 }
 
-export function findRemovedArticlePaths(
-	newArticles: ArticleMap,
-	existingArticles?: ArticleMap
+export function findLeftoverPaths(
+	uploadedArticles: ArticleMap,
+	previousArticles?: ArticleMap
 ): string[] {
-	const newPaths = extractArticlePaths(newArticles)
-	const existingPaths = existingArticles
-		? extractArticlePaths(existingArticles)
-		: new Set<string>()
+	const uploadedPaths = extractArticlePaths(uploadedArticles)
+	if (previousArticles === undefined) return Array.from(uploadedPaths)
 
-	return Array.from(existingPaths).filter(p => !newPaths.has(p))
+	const previousPaths = extractArticlePaths(previousArticles)
+	return Array.from(previousPaths).filter(p => !uploadedPaths.has(p))
 }
 
 function extractArticlePaths(articleMap: ArticleMap): Set<string> {
 	const paths = new Set<string>()
 
-	function traverse(children: ArticleMapChildren) {
-		Object.values(children).forEach(child => {
+	function collectPaths(children: ArticleMapChildren) {
+		children.forEach(child => {
 			if (child.type === 'article') {
 				paths.add(child.path)
 			} else {
-				traverse(child.children)
+				collectPaths(child.children)
 			}
 		})
 	}
 
-	traverse(articleMap.children)
+	collectPaths(articleMap.children)
 	return paths
 }
 
