@@ -19,14 +19,14 @@
 		"node": ">=21"
 	},
 	"scripts": {
-		"bundle": "npm run format:write && npm run package",
-		"format:write": "npx prettier --write .",
-		"format:check": "npx prettier --check .",
-		"lint": "npx eslint .",
-		"lint:fix": "npx eslint . --fix",
-		"test": "npx jest",
-		"package": "npx ncc build src/index.ts -o dist --source-map --license licenses.txt",
-		"all": "npm run format:write && npm run lint && npm run test && npm run package"
+		"bundle": "pnpm run format:write && pnpm run package",
+		"format:write": "pnpx prettier --write .",
+		"format:check": "pnpx prettier --check .",
+		"lint": "pnpx eslint .",
+		"lint:fix": "pnpx eslint . --fix",
+		"test": "pnpx jest",
+		"package": "pnpx ncc build src/index.ts -o dist --source-map --license licenses.txt",
+		"all": "pnpm run format:write && pnpm run lint && pnpm run test && pnpm run package"
 	},
 	"devDependencies": {
 		"@eslint/js": "^9.15.0",
