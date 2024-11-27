@@ -22,12 +22,12 @@ describe('Documenation Functions', () => {
 						'02-article-2.md',
 						'03-empty-nested'
 					]
-				if (path === 'docs\\01-nested') return ['00-nested-article-1.md']
+				if (path === 'docs/01-nested') return ['00-nested-article-1.md']
 				return []
 			})
 			;(fs.statSync as jest.Mock).mockImplementation(path => {
 				const isDir =
-					path === 'docs\\01-nested' || path === 'docs\\03-empty-nested'
+					path === 'docs/01-nested' || path === 'docs/03-empty-nested'
 				return {
 					isDirectory: () => isDir,
 					isFile: () => !isDir
@@ -43,7 +43,7 @@ describe('Documenation Functions', () => {
 						type: 'article',
 						title: 'Article 1',
 						path: 'article-1',
-						_localPath: 'docs\\00-article-1.md'
+						_localPath: 'docs/00-article-1.md'
 					},
 					{
 						type: 'directory',
@@ -52,8 +52,8 @@ describe('Documenation Functions', () => {
 							{
 								type: 'article',
 								title: 'Nested Article 1',
-								path: 'nested\\nested-article-1',
-								_localPath: 'docs\\01-nested\\00-nested-article-1.md'
+								path: 'nested/nested-article-1',
+								_localPath: 'docs/01-nested/00-nested-article-1.md'
 							}
 						]
 					},
@@ -61,7 +61,7 @@ describe('Documenation Functions', () => {
 						type: 'article',
 						title: 'Article 2',
 						path: 'article-2',
-						_localPath: 'docs\\02-article-2.md'
+						_localPath: 'docs/02-article-2.md'
 					}
 				]
 			})
@@ -79,7 +79,7 @@ describe('Documenation Functions', () => {
 					type: 'article',
 					title: 'Article 1',
 					path: 'article-1',
-					_localPath: 'docs\\00-article-1.md'
+					_localPath: 'docs/00-article-1.md'
 				},
 				{
 					type: 'directory',
@@ -88,8 +88,8 @@ describe('Documenation Functions', () => {
 						{
 							type: 'article',
 							title: 'Nested Article 1',
-							path: 'nested\\nested-article-1',
-							_localPath: 'docs\\01-nested\\00-nested-article-1.md'
+							path: 'nested/nested-article-1',
+							_localPath: 'docs/01-nested/00-nested-article-1.md'
 						}
 					]
 				}
@@ -122,11 +122,11 @@ describe('Documenation Functions', () => {
 			)
 
 			expect(fs.readFileSync).toHaveBeenCalledWith(
-				'docs\\00-article-1.md',
+				'docs/00-article-1.md',
 				'utf-8'
 			)
 			expect(fs.readFileSync).toHaveBeenCalledWith(
-				'docs\\01-nested\\00-nested-article-1.md',
+				'docs/01-nested/00-nested-article-1.md',
 				'utf-8'
 			)
 
@@ -136,13 +136,13 @@ describe('Documenation Functions', () => {
 				{ upsert: true }
 			)
 			expect(uploadMock).toHaveBeenCalledWith(
-				'test-project/nested\\nested-article-1.md',
+				'test-project/nested/nested-article-1.md',
 				'mock file content',
 				{ upsert: true }
 			)
 
 			expect(successfulUploads).toEqual(
-				new Set(['article-1', 'nested\\nested-article-1'])
+				new Set(['article-1', 'nested/nested-article-1'])
 			)
 
 			expect(core.info).toHaveBeenCalledWith(
@@ -170,7 +170,7 @@ describe('Documenation Functions', () => {
 			expect(successfulUploads).toEqual(new Set(['article-1']))
 
 			expect(core.warning).toHaveBeenCalledWith(
-				'Failed to upload docs\\01-nested\\00-nested-article-1.md: Test error'
+				'Failed to upload docs/01-nested/00-nested-article-1.md: Test error'
 			)
 
 			expect(core.info).toHaveBeenCalledWith(
@@ -198,11 +198,11 @@ describe('Documenation Functions', () => {
 			)
 
 			expect(core.warning).toHaveBeenCalledWith(
-				'Failed to upload docs\\01-nested\\00-nested-article-1.md: Test error'
+				'Failed to upload docs/01-nested/00-nested-article-1.md: Test error'
 			)
 
 			expect(core.warning).toHaveBeenCalledWith(
-				'Failed to upload docs\\00-article-1.md: Test error'
+				'Failed to upload docs/00-article-1.md: Test error'
 			)
 		})
 	})

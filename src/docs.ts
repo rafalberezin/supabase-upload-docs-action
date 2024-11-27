@@ -20,11 +20,11 @@ export function generateArticleMap(docsPath: string): ArticleMap {
 		const slugs = {}
 
 		files.forEach(file => {
-			const fullLocalPath = path.join(localPath, file)
+			const fullLocalPath = path.posix.join(localPath, file)
 			const stats = fs.statSync(fullLocalPath)
 
 			const { slug, title } = processName(file, true, slugs)
-			const fullSlugPath = path.join(slugPath, slug)
+			const fullSlugPath = path.posix.join(slugPath, slug)
 
 			if (stats.isDirectory()) {
 				const dirChildren = processDir(fullLocalPath, fullSlugPath)
@@ -136,7 +136,7 @@ export async function deleteLeftoverFiles(
 	const removedPaths = findLeftoverPaths(
 		uploadedArticles,
 		previousArticles
-	).map(p => path.join(projectSlug, p))
+	).map(p => path.posix.join(projectSlug, p))
 
 	supabase.storage.from(storageBucket).remove(removedPaths)
 }
