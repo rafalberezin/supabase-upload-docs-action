@@ -105,7 +105,7 @@ async function uploadFile(
 	if (!localPath) return null
 
 	const remotePath = `${projectSlug}/${article.path}.md`
-	const fileContents = fs.readFileSync(localPath, 'utf-8')
+	const fileContents = fs.readFileSync(localPath)
 
 	const { error } = await supabase.storage
 		.from(storageBucket)
