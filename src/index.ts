@@ -13,6 +13,7 @@ import { loadMetadata } from './meta'
 import {
 	deleteLeftoverFiles,
 	generateArticleMap,
+	getCurrentFilePaths,
 	manageDocumentStorage,
 	upsertDatabaseEntry
 } from './docs'
@@ -41,11 +42,25 @@ async function run() {
 		const slug = metadata.slug ? generateSlug(metadata.slug) : titleSlug
 
 		const articles = generateArticleMap(docsPath)
+		const previousFullFilePaths = await getCurrentFilePaths(
+			supabase,
+			storageBucket,
+			slug
+		)
+
 		const successfulUploadPaths = await manageDocumentStorage(
 			supabase,
 			storageBucket,
 			slug,
 			articles
+		)
+
+		await deleteLeftoverFiles(
+			supabase,
+			storageBucket,
+			slug,
+			successfulUploadPaths,
+			previousFullFilePaths
 		)
 
 		const uploadedArticles = filterSuccessfulUploads(
@@ -56,18 +71,10 @@ async function run() {
 		const { data: existingDatabaseEntry }: { data: DatabaseEntry | null } =
 			await supabase.from(dbTable).select('*').eq('slug', slug).single()
 
-		await deleteLeftoverFiles(
-			supabase,
-			storageBucket,
-			slug,
-			uploadedArticles,
-			existingDatabaseEntry?.articles
-		)
-
 		const newDatabaseEntry = buildDatabaseEntry(
 			title,
 			slug,
-			articles,
+			uploadedArticles,
 			metadata,
 			repoDetails,
 			existingDatabaseEntry

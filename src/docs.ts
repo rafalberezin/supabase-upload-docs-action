@@ -54,6 +54,37 @@ export function generateArticleMap(docsPath: string): ArticleMap {
 	}
 }
 
+export async function getCurrentFilePaths(
+	supabase: SupabaseClient,
+	bucket: string,
+	slug: string
+): Promise<Set<string>> {
+	const paths = new Set<string>()
+
+	async function list(dirPath: string) {
+		const fullDirPath = path.posix.join(slug, dirPath)
+		const { data, error } = await supabase.storage
+			.from(bucket)
+			.list(fullDirPath)
+		if (error) {
+			throw new Error(`Failed to list supabase storage files: ${error.message}`)
+		}
+
+		for (const file of data) {
+			const fullPath = path.posix.join(dirPath, file.name)
+			// Directories ara not a simulated not real and have null values for all properties except name
+			if (file.id === null) {
+				await list(fullPath)
+			} else {
+				paths.add(fullPath)
+			}
+		}
+	}
+
+	await list('')
+	return paths
+}
+
 export async function manageDocumentStorage(
 	supabase: SupabaseClient,
 	storageBucket: string,
@@ -130,15 +161,20 @@ export async function deleteLeftoverFiles(
 	supabase: SupabaseClient,
 	storageBucket: string,
 	projectSlug: string,
-	uploadedArticles: ArticleMap,
-	previousArticles?: ArticleMap
+	uploadedFilePaths: Set<string>,
+	previousFilePaths: Set<string>
 ): Promise<void> {
 	const removedPaths = findLeftoverPaths(
-		uploadedArticles,
-		previousArticles
+		uploadedFilePaths,
+		previousFilePaths
 	).map(p => path.posix.join(projectSlug, p))
+	if (removedPaths.length === 0) return
 
-	supabase.storage.from(storageBucket).remove(removedPaths)
+	const { error } = await supabase.storage
+		.from(storageBucket)
+		.remove(removedPaths)
+
+	if (error) core.warning(`Failed to delete leftover files: ${error.message}`)
 }
 
 export async function upsertDatabaseEntry(

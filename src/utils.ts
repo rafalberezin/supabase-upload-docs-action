@@ -147,31 +147,10 @@ export function filterSuccessfulUploads(
 }
 
 export function findLeftoverPaths(
-	uploadedArticles: ArticleMap,
-	previousArticles?: ArticleMap
+	uploadedFilePaths: Set<string>,
+	previousFilePaths: Set<string>
 ): string[] {
-	const uploadedPaths = extractArticlePaths(uploadedArticles)
-	if (previousArticles === undefined) return Array.from(uploadedPaths)
-
-	const previousPaths = extractArticlePaths(previousArticles)
-	return Array.from(previousPaths).filter(p => !uploadedPaths.has(p))
-}
-
-function extractArticlePaths(articleMap: ArticleMap): Set<string> {
-	const paths = new Set<string>()
-
-	function collectPaths(children: ArticleMapChildren) {
-		children.forEach(child => {
-			if (child.type === 'article') {
-				paths.add(child.path)
-			} else {
-				collectPaths(child.children)
-			}
-		})
-	}
-
-	collectPaths(articleMap.children)
-	return paths
+	return Array.from(previousFilePaths).filter(p => !uploadedFilePaths.has(p))
 }
 
 function updateVersions(

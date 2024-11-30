@@ -229,7 +229,7 @@ describe('Utility Function', () => {
 			)
 
 			const checkNoLocalPaths = (children: ArticleMapChildren) => {
-				Object.values(children).forEach(child => {
+				children.forEach(child => {
 					if (child.type === 'article') {
 						expect(child._localPath).toBeUndefined()
 					} else if (child.type === 'directory') {
@@ -286,56 +286,20 @@ describe('Utility Function', () => {
 	})
 
 	describe('findLeftoverPaths', () => {
-		const mockUploadedArticles: ArticleMap = {
-			type: 'root',
-			children: [
-				{
-					type: 'article',
-					title: 'Article 1',
-					path: 'article-1'
-				},
-				{
-					type: 'directory',
-					title: 'Nested',
-					children: [
-						{
-							type: 'article',
-							title: 'Nested Article 1',
-							path: 'nested/nested-article-1'
-						}
-					]
-				}
-			]
-		}
-
-		const mockPreviousArticles: ArticleMap = {
-			type: 'root',
-			children: [
-				{
-					type: 'article',
-					title: 'Article 1',
-					path: 'article-1'
-				}
-			]
-		}
+		const mockMorePaths = new Set<string>([
+			'article-1',
+			'nested/nested-article-1'
+		])
+		const mockLessPaths = new Set<string>(['article-1'])
 
 		it('should return empty array when nothing has changed', () => {
-			expect(
-				findLeftoverPaths(mockPreviousArticles, mockPreviousArticles)
-			).toHaveLength(0)
+			expect(findLeftoverPaths(mockLessPaths, mockLessPaths)).toHaveLength(0)
 		})
 
-		it('should return uploaded articles if previous articles are undefined', () => {
-			expect(findLeftoverPaths(mockUploadedArticles)).toEqual([
-				'article-1',
+		it('should return paths present in previous paths but not in uploaded paths', () => {
+			expect(findLeftoverPaths(mockLessPaths, mockMorePaths)).toEqual([
 				'nested/nested-article-1'
 			])
-		})
-
-		it('should return paths present in uploaded articles but not in previous articles', () => {
-			expect(
-				findLeftoverPaths(mockUploadedArticles, mockPreviousArticles)
-			).toHaveLength(0)
 		})
 	})
 })
