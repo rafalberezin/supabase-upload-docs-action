@@ -3,12 +3,7 @@ import path from 'path'
 import * as core from '@actions/core'
 import { findLeftoverPaths, processName } from './utils'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type {
-	Article,
-	ArticleMap,
-	ArticleMapChildren,
-	DatabaseEntry
-} from './types'
+import type { Article, ArticleMap, ArticleMapChildren } from './types'
 
 export function generateArticleMap(docsPath: string): ArticleMap {
 	function processDir(
@@ -52,37 +47,6 @@ export function generateArticleMap(docsPath: string): ArticleMap {
 		type: 'root',
 		children: processDir(docsPath)
 	}
-}
-
-export async function getCurrentFilePaths(
-	supabase: SupabaseClient,
-	bucket: string,
-	slug: string
-): Promise<Set<string>> {
-	const paths = new Set<string>()
-
-	async function list(dirPath: string) {
-		const fullDirPath = path.posix.join(slug, dirPath)
-		const { data, error } = await supabase.storage
-			.from(bucket)
-			.list(fullDirPath)
-		if (error) {
-			throw new Error(`Failed to list supabase storage files: ${error.message}`)
-		}
-
-		for (const file of data) {
-			const fullPath = path.posix.join(dirPath, file.name)
-			// Directories ara not a simulated not real and have null values for all properties except name
-			if (file.id === null) {
-				await list(fullPath)
-			} else {
-				paths.add(fullPath)
-			}
-		}
-	}
-
-	await list('')
-	return paths
 }
 
 export async function manageDocumentStorage(
@@ -175,16 +139,4 @@ export async function deleteLeftoverFiles(
 		.remove(removedPaths)
 
 	if (error) core.warning(`Failed to delete leftover files: ${error.message}`)
-}
-
-export async function upsertDatabaseEntry(
-	supabase: SupabaseClient,
-	table: string,
-	databaseEntry: DatabaseEntry
-) {
-	const { error } = await supabase.from(table).upsert(databaseEntry)
-
-	if (error) {
-		throw new Error(`Failed to upsert database entry: ${error.message}`)
-	}
 }

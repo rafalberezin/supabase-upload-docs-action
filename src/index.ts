@@ -2,20 +2,22 @@ import * as core from '@actions/core'
 import * as github from '@actions/github'
 import { createClient } from '@supabase/supabase-js'
 import {
-	buildDatabaseEntry,
 	filterSuccessfulUploads,
 	generateSlug,
-	getRepositoryDetail,
 	slugToTitle,
 	validateDocsPath
 } from './utils'
-import { loadMetadata } from './meta'
+import {
+	buildDatabaseEntry,
+	getCurrentFilePaths,
+	getRepositoryDetails,
+	loadMetadata,
+	upsertDatabaseEntry
+} from './meta'
 import {
 	deleteLeftoverFiles,
 	generateArticleMap,
-	getCurrentFilePaths,
-	manageDocumentStorage,
-	upsertDatabaseEntry
+	manageDocumentStorage
 } from './docs'
 import type { DatabaseEntry } from './types'
 
@@ -34,7 +36,7 @@ async function run() {
 		const supabase = createClient(supabaseUrl, supabaseKey)
 		const octokit = github.getOctokit(githubToken)
 
-		const repoDetails = await getRepositoryDetail(octokit, github.context)
+		const repoDetails = await getRepositoryDetails(octokit, github.context)
 		const metadata = loadMetadata(metaPath)
 
 		const titleSlug = generateSlug(metadata.title ?? repoDetails.title)

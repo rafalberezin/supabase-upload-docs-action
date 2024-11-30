@@ -1,10 +1,6 @@
 import fs from 'fs'
 import * as core from '@actions/core'
-import {
-	generateArticleMap,
-	getCurrentFilePaths,
-	manageDocumentStorage
-} from '../src/docs'
+import { generateArticleMap, manageDocumentStorage } from '../src/docs'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { ArticleMap } from '../src/types'
 
@@ -69,60 +65,6 @@ describe('Documenation Functions', () => {
 					}
 				]
 			})
-		})
-	})
-
-	describe('getCurrentFilePaths', () => {
-		let mockSupabase: jest.Mocked<SupabaseClient>
-
-		beforeAll(() => {
-			mockSupabase = {
-				storage: {
-					from: jest.fn().mockReturnValue({
-						list: jest.fn()
-					})
-				}
-			} as unknown as jest.Mocked<SupabaseClient>
-		})
-
-		it('should create a list of file paths', async () => {
-			;(mockSupabase.storage.from('').list as jest.Mock).mockImplementation(
-				path => {
-					if (path === 'test-project')
-						return Promise.resolve({
-							data: [
-								{ id: 'id1', name: 'article-1.md' },
-								{ id: null, name: 'nested' }
-							],
-							error: null
-						})
-					if (path === 'test-project/nested')
-						return Promise.resolve({
-							data: [{ id: 'id1', name: 'nested-article-1.md' }],
-							error: null
-						})
-					return Promise.resolve({ data: null, error: null })
-				}
-			)
-
-			await expect(
-				getCurrentFilePaths(mockSupabase, 'test-bucket', 'test-project')
-			).resolves.toEqual(
-				new Set<string>(['article-1.md', 'nested/nested-article-1.md'])
-			)
-		})
-
-		it('should throw an error', async () => {
-			;(mockSupabase.storage.from('').list as jest.Mock).mockResolvedValue({
-				data: null,
-				error: new Error('Unable to list files')
-			})
-
-			await expect(
-				getCurrentFilePaths(mockSupabase, 'test-bucket', 'test-project')
-			).rejects.toThrow(
-				'Failed to list supabase storage files: Unable to list files'
-			)
 		})
 	})
 

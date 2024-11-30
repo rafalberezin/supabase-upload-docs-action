@@ -1,15 +1,6 @@
 import fs from 'fs'
-import * as core from '@actions/core'
 import kebabCase from 'lodash/kebabCase'
-import type * as github from '@actions/github'
-import type {
-	ArticleMap,
-	ArticleMapChildren,
-	DatabaseEntry,
-	ProjectMetadata,
-	RepositoryDetails,
-	SlugTracker
-} from './types'
+import type { ArticleMap, ArticleMapChildren, SlugTracker } from './types'
 
 export function validateDocsPath(docsPath: string): void {
 	if (!fs.existsSync(docsPath)) {
@@ -19,40 +10,6 @@ export function validateDocsPath(docsPath: string): void {
 	const stats = fs.statSync(docsPath)
 	if (!stats.isDirectory()) {
 		throw new Error(`Documentation path is not a directory: ${docsPath}`)
-	}
-}
-
-export async function getRepositoryDetail(
-	octokit: ReturnType<typeof github.getOctokit>,
-	context: typeof github.context
-): Promise<RepositoryDetails> {
-	try {
-		const repoResponse = await octokit.rest.repos.get(context.repo)
-
-		let latestVersion: string | undefined
-		try {
-			const releaseResponse = await octokit.rest.repos.getLatestRelease(
-				context.repo
-			)
-			latestVersion = releaseResponse.data.tag_name
-		} catch {
-			core.info('No releases found for this repository')
-		}
-
-		return {
-			title: context.repo.repo,
-			description: repoResponse.data.description || undefined,
-			source: repoResponse.data.html_url,
-			license: repoResponse.data.license?.name,
-			latest_version: latestVersion
-		}
-	} catch (error) {
-		core.warning(
-			`Could not retrieve repository details: ${error instanceof Error ? error.message : 'Unknown Error'}`
-		)
-		return {
-			title: context.repo.repo
-		}
 	}
 }
 
@@ -86,28 +43,6 @@ export function slugToTitle(slug: string): string {
 		.split('-')
 		.map(word => word.charAt(0).toUpperCase() + word.slice(1))
 		.join(' ')
-}
-
-export function buildDatabaseEntry(
-	title: string,
-	slug: string,
-	articles: ArticleMap,
-	metadata: ProjectMetadata,
-	repoDetails: RepositoryDetails,
-	existingEntry: DatabaseEntry | null
-): DatabaseEntry {
-	return {
-		...existingEntry,
-		...repoDetails,
-		...metadata,
-		articles,
-		slug,
-		title,
-		versions: updateVersions(
-			existingEntry?.versions,
-			repoDetails.latest_version
-		)
-	}
 }
 
 export function filterSuccessfulUploads(
@@ -151,16 +86,4 @@ export function findLeftoverPaths(
 	previousFilePaths: Set<string>
 ): string[] {
 	return Array.from(previousFilePaths).filter(p => !uploadedFilePaths.has(p))
-}
-
-function updateVersions(
-	versions?: string[],
-	newVersion?: string
-): string[] | undefined {
-	if (!newVersion) return versions
-
-	const updateVersions = new Set(versions)
-	updateVersions.add(newVersion)
-
-	return Array.from(updateVersions)
 }
