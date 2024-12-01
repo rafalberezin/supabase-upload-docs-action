@@ -26,8 +26,8 @@ async function run() {
 		const supabaseUrl = core.getInput('supabase-url', { required: true })
 		const supabaseKey = core.getInput('supabase-key', { required: true })
 		const docsPath = core.getInput('docs-path', { required: true })
-		const metaPath = core.getInput('meta-path', { required: true })
-		const dbTable = core.getInput('db-table', { required: true })
+		const metaPath = core.getInput('meta-path')
+		const dbTable = core.getInput('db-table')
 		const storageBucket = core.getInput('storage-bucket', { required: true })
 
 		validateDocsPath(docsPath)
@@ -66,6 +66,13 @@ async function run() {
 		)
 		if (leftoverPaths.length > 0)
 			await deleteFiles(supabase, storageBucket, slug, leftoverPaths)
+
+		if (dbTable.length === 0) {
+			core.info('Upload completed successfully (without metadata)')
+			return
+		}
+
+		core.info(`Uploading metadata for project: ${slug}`)
 
 		const title =
 			projectMetadata.title ??

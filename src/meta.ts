@@ -13,7 +13,7 @@ import type {
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 export function loadMetadata(metaPath: string): ProjectMetadata {
-	if (!metaPath) return {}
+	if (metaPath.length === 0) return {}
 
 	try {
 		if (!fs.existsSync(metaPath)) {

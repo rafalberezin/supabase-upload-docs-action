@@ -23,12 +23,10 @@ inputs:
     default: './docs'
   meta-path:
     description: 'Path to metadata file. (.yml, .yaml or .json)'
-    required: true
-    default: './docs/meta.yml'
+    required: false
   db-table:
     description: 'Database table that stores project metadata'
-    required: true
-    default: 'projects'
+    required: false
   storage-bucket:
     description: 'Supabase storage bucket that stores documentation files'
     required: true
