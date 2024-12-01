@@ -2,24 +2,23 @@ import * as core from '@actions/core'
 import * as github from '@actions/github'
 import { createClient } from '@supabase/supabase-js'
 import {
-	filterSuccessfulUploads,
+	findUploadPaths,
+	findLeftoverPaths,
 	generateSlug,
-	slugToTitle,
-	validateDocsPath
+	processName,
+	validateDocsPath,
+	prepareArticleMapForUpload,
+	flattenArticlePaths
 } from './utils'
 import {
 	buildDatabaseEntry,
-	getCurrentFilePaths,
+	fetchDatabaseEntry,
+	fetchRemoteFilesMetadata,
 	getRepositoryDetails,
 	loadMetadata,
 	upsertDatabaseEntry
 } from './meta'
-import {
-	deleteLeftoverFiles,
-	generateArticleMap,
-	manageDocumentStorage
-} from './docs'
-import type { DatabaseEntry } from './types'
+import { deleteFiles, generateArticleMap, manageDocumentStorage } from './docs'
 
 async function run() {
 	try {
@@ -37,51 +36,58 @@ async function run() {
 		const octokit = github.getOctokit(githubToken)
 
 		const repoDetails = await getRepositoryDetails(octokit, github.context)
-		const metadata = loadMetadata(metaPath)
+		const projectMetadata = loadMetadata(metaPath)
 
-		const titleSlug = generateSlug(metadata.title ?? repoDetails.title)
-		const title = slugToTitle(titleSlug)
-		const slug = metadata.slug ? generateSlug(metadata.slug) : titleSlug
+		const slug =
+			projectMetadata.slug ??
+			generateSlug(projectMetadata.title ?? repoDetails.title)
 
-		const articles = generateArticleMap(docsPath)
-		const previousFullFilePaths = await getCurrentFilePaths(
+		const localArticleMap = generateArticleMap(docsPath)
+		const remoteFilesMetadata = await fetchRemoteFilesMetadata(
 			supabase,
 			storageBucket,
 			slug
 		)
 
-		const successfulUploadPaths = await manageDocumentStorage(
+		const articlePaths = flattenArticlePaths(localArticleMap)
+
+		const uploadPaths = await findUploadPaths(articlePaths, remoteFilesMetadata)
+		const failedUploadPaths = await manageDocumentStorage(
 			supabase,
 			storageBucket,
 			slug,
-			articles
+			uploadPaths
 		)
 
-		await deleteLeftoverFiles(
+		const leftoverPaths = findLeftoverPaths(
+			articlePaths,
+			remoteFilesMetadata,
+			failedUploadPaths
+		)
+		if (leftoverPaths.length > 0)
+			await deleteFiles(supabase, storageBucket, slug, leftoverPaths)
+
+		const title =
+			projectMetadata.title ??
+			processName(projectMetadata.slug ?? repoDetails.title).title
+		const filteredArticleMap = prepareArticleMapForUpload(
+			localArticleMap,
+			failedUploadPaths
+		)
+
+		const existingDatabaseEntry = await fetchDatabaseEntry(
 			supabase,
-			storageBucket,
-			slug,
-			successfulUploadPaths,
-			previousFullFilePaths
+			dbTable,
+			slug
 		)
-
-		const uploadedArticles = filterSuccessfulUploads(
-			articles,
-			successfulUploadPaths
-		)
-
-		const { data: existingDatabaseEntry }: { data: DatabaseEntry | null } =
-			await supabase.from(dbTable).select('*').eq('slug', slug).single()
-
 		const newDatabaseEntry = buildDatabaseEntry(
 			title,
 			slug,
-			uploadedArticles,
-			metadata,
+			filteredArticleMap,
+			projectMetadata,
 			repoDetails,
 			existingDatabaseEntry
 		)
-
 		await upsertDatabaseEntry(supabase, dbTable, newDatabaseEntry)
 
 		core.info('Upload completed successfully')

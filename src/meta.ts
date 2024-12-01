@@ -1,5 +1,5 @@
 import fs from 'fs'
-import path from 'path'
+import path from 'path/posix'
 import * as core from '@actions/core'
 import yaml from 'js-yaml'
 import type * as github from '@actions/github'
@@ -7,7 +7,8 @@ import type {
 	ArticleMap,
 	DatabaseEntry,
 	ProjectMetadata,
-	RepositoryDetails
+	RepositoryDetails,
+	RemoteFilesMetadata
 } from './types'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
@@ -37,37 +38,6 @@ export function loadMetadata(metaPath: string): ProjectMetadata {
 		core.warning(`Could not load metadata: ${error}`)
 		return {}
 	}
-}
-
-export async function getCurrentFilePaths(
-	supabase: SupabaseClient,
-	bucket: string,
-	slug: string
-): Promise<Set<string>> {
-	const paths = new Set<string>()
-
-	async function list(dirPath: string) {
-		const fullDirPath = path.posix.join(slug, dirPath)
-		const { data, error } = await supabase.storage
-			.from(bucket)
-			.list(fullDirPath)
-		if (error) {
-			throw new Error(`Failed to list supabase storage files: ${error.message}`)
-		}
-
-		for (const file of data) {
-			const fullPath = path.posix.join(dirPath, file.name)
-			// Directories ara not a simulated not real and have null values for all properties except name
-			if (file.id === null) {
-				await list(fullPath)
-			} else {
-				paths.add(fullPath)
-			}
-		}
-	}
-
-	await list('')
-	return paths
 }
 
 export async function getRepositoryDetails(
@@ -102,6 +72,59 @@ export async function getRepositoryDetails(
 			title: context.repo.repo
 		}
 	}
+}
+
+export async function fetchRemoteFilesMetadata(
+	supabase: SupabaseClient,
+	storageBucket: string,
+	slug: string
+): Promise<RemoteFilesMetadata> {
+	const filesMeta: RemoteFilesMetadata = {}
+
+	async function list(dirPath: string) {
+		const fullDirPath = path.join(slug, dirPath)
+		const { data, error } = await supabase.storage
+			.from(storageBucket)
+			.list(fullDirPath)
+
+		if (error) {
+			throw new Error(`Failed to list supabase storage files: ${error.message}`)
+		}
+
+		for (const file of data) {
+			const fullRemotePath = path.join(dirPath, path.parse(file.name).name)
+
+			// Directories are simulated, not real and have null values for all properties except name
+			if (file.id === null) {
+				await list(fullRemotePath)
+			} else {
+				if (file.metadata?.eTag)
+					filesMeta[fullRemotePath] = file.metadata.eTag.slice(
+						1,
+						file.metadata.eTag.length - 1
+					)
+			}
+		}
+	}
+
+	await list('')
+	return filesMeta
+}
+
+export async function fetchDatabaseEntry(
+	supabase: SupabaseClient,
+	dbTable: string,
+	slug: string
+): Promise<DatabaseEntry | null> {
+	const { data, error } = await supabase
+		.from(dbTable)
+		.select('*')
+		.eq('slug', slug)
+		.single()
+
+	if (error) core.warning(`Could not retrieve database entry: ${error.message}`)
+
+	return data
 }
 
 export function buildDatabaseEntry(

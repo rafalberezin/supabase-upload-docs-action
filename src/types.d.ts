@@ -41,8 +41,12 @@ export interface Directory {
 export interface Article {
 	type: 'article'
 	title: string
-	path: string
+	path: string // remotePath
 	_localPath?: string
 }
 
 export type SlugTracker = Record<string, number>
+
+export type RemoteFilesMetadata = Record<string, string> // remotePath to eTag
+
+export type RemoteToLocalPaths = Record<string, string>

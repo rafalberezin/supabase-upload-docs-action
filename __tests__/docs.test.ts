@@ -1,8 +1,11 @@
 import fs from 'fs'
 import * as core from '@actions/core'
-import { generateArticleMap, manageDocumentStorage } from '../src/docs'
+import {
+	deleteFiles,
+	generateArticleMap,
+	manageDocumentStorage
+} from '../src/docs'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { ArticleMap } from '../src/types'
 
 // Mock @actions/core to prevent import errors
 jest.mock('@actions/core', () => ({
@@ -72,28 +75,9 @@ describe('Documenation Functions', () => {
 		;(fs.readFileSync as jest.Mock).mockReturnValue('mock file content')
 		let mockSupabase: jest.Mocked<SupabaseClient>
 
-		const mockArticleMap: ArticleMap = {
-			type: 'root',
-			children: [
-				{
-					type: 'article',
-					title: 'Article 1',
-					path: 'article-1',
-					_localPath: 'docs/00-article-1.md'
-				},
-				{
-					type: 'directory',
-					title: 'Nested',
-					children: [
-						{
-							type: 'article',
-							title: 'Nested Article 1',
-							path: 'nested/nested-article-1',
-							_localPath: 'docs/01-nested/00-nested-article-1.md'
-						}
-					]
-				}
-			]
+		const mockUploadPaths = {
+			'article-1': 'docs/00-article-1.md',
+			'nested/nested-article-1': 'docs/01-nested/00-nested-article-1.md'
 		}
 
 		beforeEach(() => {
@@ -114,20 +98,16 @@ describe('Documenation Functions', () => {
 				error: null
 			})
 
-			const successfulUploads = await manageDocumentStorage(
+			const failedUploadPaths = await manageDocumentStorage(
 				mockSupabase,
 				'project-docs',
 				'test-project',
-				mockArticleMap
+				mockUploadPaths
 			)
 
+			expect(fs.readFileSync).toHaveBeenCalledWith('docs/00-article-1.md')
 			expect(fs.readFileSync).toHaveBeenCalledWith(
-				'docs/00-article-1.md',
-				'utf-8'
-			)
-			expect(fs.readFileSync).toHaveBeenCalledWith(
-				'docs/01-nested/00-nested-article-1.md',
-				'utf-8'
+				'docs/01-nested/00-nested-article-1.md'
 			)
 
 			expect(uploadMock).toHaveBeenCalledWith(
@@ -141,9 +121,7 @@ describe('Documenation Functions', () => {
 				{ upsert: true }
 			)
 
-			expect(successfulUploads).toEqual(
-				new Set(['article-1', 'nested/nested-article-1'])
-			)
+			expect(failedUploadPaths).toEqual(new Set<string>())
 
 			expect(core.info).toHaveBeenCalledWith(
 				'File uploads complete: 2 succeeded, 0 failed'
@@ -160,14 +138,14 @@ describe('Documenation Functions', () => {
 					error: new Error('Test error')
 				})
 
-			const successfulUploads = await manageDocumentStorage(
+			const failedUploadPaths = await manageDocumentStorage(
 				mockSupabase,
 				'project-docs',
 				'test-project',
-				mockArticleMap
+				mockUploadPaths
 			)
 
-			expect(successfulUploads).toEqual(new Set(['article-1']))
+			expect(failedUploadPaths).toEqual(new Set(['nested/nested-article-1']))
 
 			expect(core.warning).toHaveBeenCalledWith(
 				'Failed to upload docs/01-nested/00-nested-article-1.md: Test error'
@@ -189,7 +167,7 @@ describe('Documenation Functions', () => {
 					mockSupabase,
 					'project-docs',
 					'test-project',
-					mockArticleMap
+					mockUploadPaths
 				)
 			).rejects.toThrow('All file uploads failed')
 
@@ -203,6 +181,60 @@ describe('Documenation Functions', () => {
 
 			expect(core.warning).toHaveBeenCalledWith(
 				'Failed to upload docs/00-article-1.md: Test error'
+			)
+		})
+	})
+
+	describe('deleteFiles', () => {
+		const remotePaths = ['article-1', 'nested/nested-article-1']
+		let mockSupabase: jest.Mocked<SupabaseClient>
+
+		beforeAll(() => {
+			jest.clearAllMocks()
+
+			mockSupabase = {
+				storage: {
+					from: jest.fn().mockReturnValue({
+						remove: jest.fn()
+					})
+				}
+			} as unknown as jest.Mocked<SupabaseClient>
+		})
+
+		it('should delete leftover files', async () => {
+			const remove = mockSupabase.storage.from('').remove as jest.Mock
+			remove.mockResolvedValue({
+				error: null
+			})
+
+			await deleteFiles(
+				mockSupabase,
+				'test-bucket',
+				'test-project',
+				remotePaths
+			)
+
+			expect(remove).toHaveBeenCalledWith([
+				'test-project/article-1.md',
+				'test-project/nested/nested-article-1.md'
+			])
+			expect(core.warning).toHaveBeenCalledTimes(0)
+		})
+
+		it('should fail to delete leftover', async () => {
+			;(mockSupabase.storage.from('').remove as jest.Mock).mockResolvedValue({
+				error: new Error('Test error')
+			})
+
+			await deleteFiles(
+				mockSupabase,
+				'test-bucket',
+				'test-project',
+				remotePaths
+			)
+
+			expect(core.warning).toHaveBeenCalledWith(
+				'Failed to delete files: Test error'
 			)
 		})
 	})

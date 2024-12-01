@@ -1,4 +1,4 @@
-import { buildDatabaseEntry, getCurrentFilePaths } from '../src/meta'
+import { buildDatabaseEntry, fetchRemoteFilesMetadata } from '../src/meta'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type {
 	ArticleMap,
@@ -8,7 +8,7 @@ import type {
 } from '../src/types'
 
 describe('Metadata functions', () => {
-	describe('getCurrentFilePaths', () => {
+	describe('fetchRemoteFilesMetadata', () => {
 		let mockSupabase: jest.Mocked<SupabaseClient>
 
 		beforeAll(() => {
@@ -27,14 +27,24 @@ describe('Metadata functions', () => {
 					if (path === 'test-project')
 						return Promise.resolve({
 							data: [
-								{ id: 'id1', name: 'article-1.md' },
-								{ id: null, name: 'nested' }
+								{
+									id: 'id1',
+									name: 'article-1.md',
+									metadata: { eTag: '"article-1-etag"' }
+								},
+								{ id: null, name: 'nested', metadata: null }
 							],
 							error: null
 						})
 					if (path === 'test-project/nested')
 						return Promise.resolve({
-							data: [{ id: 'id1', name: 'nested-article-1.md' }],
+							data: [
+								{
+									id: 'id1',
+									name: 'nested-article-1.md',
+									metadata: { eTag: '"nested-article-1-etag"' }
+								}
+							],
 							error: null
 						})
 					return Promise.resolve({ data: null, error: null })
@@ -42,10 +52,11 @@ describe('Metadata functions', () => {
 			)
 
 			await expect(
-				getCurrentFilePaths(mockSupabase, 'test-bucket', 'test-project')
-			).resolves.toEqual(
-				new Set<string>(['article-1.md', 'nested/nested-article-1.md'])
-			)
+				fetchRemoteFilesMetadata(mockSupabase, 'test-bucket', 'test-project')
+			).resolves.toEqual({
+				'article-1': 'article-1-etag',
+				'nested/nested-article-1': 'nested-article-1-etag'
+			})
 		})
 
 		it('should throw an error', async () => {
@@ -55,7 +66,7 @@ describe('Metadata functions', () => {
 			})
 
 			await expect(
-				getCurrentFilePaths(mockSupabase, 'test-bucket', 'test-project')
+				fetchRemoteFilesMetadata(mockSupabase, 'test-bucket', 'test-project')
 			).rejects.toThrow(
 				'Failed to list supabase storage files: Unable to list files'
 			)

@@ -1,11 +1,13 @@
 import fs from 'fs'
 import {
-	filterSuccessfulUploads,
+	findUploadPaths,
 	findLeftoverPaths,
 	processName,
-	validateDocsPath
+	validateDocsPath,
+	flattenArticlePaths,
+	prepareArticleMapForUpload
 } from '../src/utils'
-import type { ArticleMap, ArticleMapChildren } from '../src/types'
+import type { ArticleMap } from '../src/types'
 
 describe('Utility Function', () => {
 	describe('validateDocsPath', () => {
@@ -74,56 +76,88 @@ describe('Utility Function', () => {
 		})
 	})
 
-	describe('filterSuccessfulUploads', () => {
-		it('should remove local paths from articles and', () => {
-			const mockArticles: ArticleMap = {
-				type: 'root',
-				children: [
+	describe('flattenArticlePaths', () => {
+		const mockArticleMap: ArticleMap = {
+			type: 'root',
+			children: [
+				{
+					type: 'article',
+					title: 'Article 1',
+					path: 'article-1',
+					_localPath: 'docs/00-article-1.md'
+				},
+				{
+					type: 'directory',
+					title: 'Nested',
+					children: [
+						{
+							type: 'article',
+							title: 'Nested Article 1',
+							path: 'nested/nested-article-1',
+							_localPath: 'docs/01-nested/00-nested-article-1.md'
+						}
+					]
+				}
+			]
+		}
+
+		it('should flatten the article paths', () => {
+			expect(flattenArticlePaths(mockArticleMap)).toEqual({
+				'article-1': 'docs/00-article-1.md',
+				'nested/nested-article-1': 'docs/01-nested/00-nested-article-1.md'
+			})
+		})
+	})
+
+	describe('filterUploadPaths', () => {
+		it('should filter file paths for files that have changed', async () => {
+			const mockPaths = {
+				'article-1': 'docs/00-article-1.md',
+				'nested/nested-article-1': 'docs/01-nested/00-nested-article-1.md'
+			}
+
+			await expect(findUploadPaths(mockPaths, {})).resolves.toEqual(mockPaths)
+		})
+	})
+
+	describe('findLeftoverPaths', () => {
+		it('should return empty array when no files were deleted and all uploads succeeded', () => {
+			expect(
+				findLeftoverPaths(
 					{
-						type: 'article',
-						title: 'Article 1',
-						path: 'article-1',
-						_localPath: 'docs/00-article-1.md'
+						'article-1': '',
+						'nested/nested-article-1': ''
 					},
 					{
-						type: 'directory',
-						title: 'Nested',
-						children: [
-							{
-								type: 'article',
-								title: 'Nested Article 1',
-								path: 'nested/nested-article-1',
-								_localPath: 'docs/01-nested/00-nested-article-1.md'
-							}
-						]
-					}
-				]
-			}
-			const mockSuccessfulUploadPaths = new Set<string>([
-				'article-1',
-				'nested/nested-article-1'
-			])
-
-			const uploadedArticles = filterSuccessfulUploads(
-				mockArticles,
-				mockSuccessfulUploadPaths
-			)
-
-			const checkNoLocalPaths = (children: ArticleMapChildren) => {
-				children.forEach(child => {
-					if (child.type === 'article') {
-						expect(child._localPath).toBeUndefined()
-					} else if (child.type === 'directory') {
-						checkNoLocalPaths(child.children)
-					}
-				})
-			}
-
-			checkNoLocalPaths(uploadedArticles.children)
+						'article-1': '',
+						'nested/nested-article-1': ''
+					},
+					new Set<string>()
+				)
+			).toHaveLength(0)
 		})
 
-		it('should remove local paths, unsuccessful uploads and empty upload directories', () => {
-			const mockArticles: ArticleMap = {
+		it('should return remote file paths for files that were deleted or their upload has failed', () => {
+			expect(
+				findLeftoverPaths(
+					{
+						'article-1': '',
+						'nested/nested-article-1': ''
+					},
+					{
+						'article-1': '',
+						'nested/nested-article-1': '',
+						'nested/nested-article-2': ''
+					},
+					new Set<string>(['article-1'])
+				)
+			).toEqual(['article-1', 'nested/nested-article-2'])
+		})
+	})
+
+	describe('prepareArticleMapForUpload', () => {
+		it('should return upload ready map of articles', () => {
+			const mockArticleMap: ArticleMap = {
 				type: 'root',
 				children: [
 					{
@@ -143,44 +177,48 @@ describe('Utility Function', () => {
 								_localPath: 'docs/01-nested/00-nested-article-1.md'
 							}
 						]
+					},
+					{
+						type: 'directory',
+						title: 'Nested 2',
+						children: [
+							{
+								type: 'article',
+								title: 'Nested Article 1',
+								path: 'nested-2/nested-article-1',
+								_localPath: 'docs/02-nested-2/00-nested-article-1.md'
+							}
+						]
 					}
 				]
 			}
-			const mockSuccessfulUploadPaths = new Set<string>(['article-1'])
 
-			const uploadedArticles = filterSuccessfulUploads(
-				mockArticles,
-				mockSuccessfulUploadPaths
-			)
-
-			expect(uploadedArticles).toEqual({
+			expect(
+				prepareArticleMapForUpload(
+					mockArticleMap,
+					new Set<string>(['nested/nested-article-1'])
+				)
+			).toEqual({
 				type: 'root',
 				children: [
 					{
 						type: 'article',
 						title: 'Article 1',
 						path: 'article-1'
+					},
+					{
+						type: 'directory',
+						title: 'Nested 2',
+						children: [
+							{
+								type: 'article',
+								title: 'Nested Article 1',
+								path: 'nested-2/nested-article-1'
+							}
+						]
 					}
 				]
 			})
-		})
-	})
-
-	describe('findLeftoverPaths', () => {
-		const mockMorePaths = new Set<string>([
-			'article-1',
-			'nested/nested-article-1'
-		])
-		const mockLessPaths = new Set<string>(['article-1'])
-
-		it('should return empty array when nothing has changed', () => {
-			expect(findLeftoverPaths(mockLessPaths, mockLessPaths)).toHaveLength(0)
-		})
-
-		it('should return paths present in previous paths but not in uploaded paths', () => {
-			expect(findLeftoverPaths(mockLessPaths, mockMorePaths)).toEqual([
-				'nested/nested-article-1'
-			])
 		})
 	})
 })

@@ -1,9 +1,13 @@
 import fs from 'fs'
-import path from 'path'
+import path from 'path/posix'
 import * as core from '@actions/core'
-import { findLeftoverPaths, processName } from './utils'
+import { processName } from './utils'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Article, ArticleMap, ArticleMapChildren } from './types'
+import type {
+	ArticleMap,
+	ArticleMapChildren,
+	RemoteToLocalPaths
+} from './types'
 
 export function generateArticleMap(docsPath: string): ArticleMap {
 	function processDir(
@@ -15,11 +19,11 @@ export function generateArticleMap(docsPath: string): ArticleMap {
 		const slugs = {}
 
 		files.forEach(file => {
-			const fullLocalPath = path.posix.join(localPath, file)
+			const fullLocalPath = path.join(localPath, file)
 			const stats = fs.statSync(fullLocalPath)
 
 			const { slug, title } = processName(file, slugs)
-			const fullSlugPath = path.posix.join(slugPath, slug)
+			const fullSlugPath = path.join(slugPath, slug)
 
 			if (stats.isDirectory()) {
 				const dirChildren = processDir(fullLocalPath, fullSlugPath)
@@ -53,36 +57,27 @@ export async function manageDocumentStorage(
 	supabase: SupabaseClient,
 	storageBucket: string,
 	projectSlug: string,
-	newArticles: ArticleMap
+	uploadPaths: RemoteToLocalPaths
 ): Promise<Set<string>> {
 	core.info('Starting file uploads')
 
-	function collectUploadPromises(
-		children: ArticleMapChildren
-	): Promise<string | null>[] {
-		const uploads: Promise<string | null>[] = []
+	const results = await Promise.all(
+		Object.entries(uploadPaths).map(async entry => {
+			return await uploadFile(
+				supabase,
+				storageBucket,
+				projectSlug,
+				entry[1],
+				entry[0]
+			)
+		})
+	)
 
-		for (const key in children) {
-			const child = children[key]
-
-			if (child.type === 'directory') {
-				uploads.push(...collectUploadPromises(child.children))
-			} else {
-				uploads.push(uploadFile(supabase, storageBucket, projectSlug, child))
-			}
-		}
-
-		return uploads
-	}
-
-	const uploadPromises = collectUploadPromises(newArticles.children)
-	const results = await Promise.all(uploadPromises)
-
-	const successfulUploadPaths = new Set(
+	const failedUploadPaths = new Set(
 		results.filter(res => typeof res === 'string')
 	)
-	const successCount = successfulUploadPaths.size
-	const failureCount = results.length - successCount
+	const failureCount = failedUploadPaths.size
+	const successCount = results.length - failureCount
 
 	core.info(
 		`File uploads complete: ${successCount} succeeded, ${failureCount} failed`
@@ -92,51 +87,42 @@ export async function manageDocumentStorage(
 		throw new Error('All file uploads failed')
 	}
 
-	return successfulUploadPaths
+	return failedUploadPaths
 }
 
 async function uploadFile(
 	supabase: SupabaseClient,
 	storageBucket: string,
 	projectSlug: string,
-	article: Article
+	localPath: string,
+	remotePath: string
 ): Promise<string | null> {
-	const localPath = article._localPath
-	if (!localPath) return null
-
-	const remotePath = `${projectSlug}/${article.path}.md`
+	const fullRemotePath = `${projectSlug}/${remotePath}.md`
 	const fileContents = fs.readFileSync(localPath)
 
 	const { error } = await supabase.storage
 		.from(storageBucket)
-		.upload(remotePath, fileContents, {
+		.upload(fullRemotePath, fileContents, {
 			upsert: true
 		})
 
 	if (error) {
 		core.warning(`Failed to upload ${localPath}: ${error.message}`)
-		return null
+		return remotePath
 	}
 
-	return article.path
+	return null
 }
 
-export async function deleteLeftoverFiles(
+export async function deleteFiles(
 	supabase: SupabaseClient,
 	storageBucket: string,
-	projectSlug: string,
-	uploadedFilePaths: Set<string>,
-	previousFilePaths: Set<string>
+	slug: string,
+	remotePaths: string[]
 ): Promise<void> {
-	const removedPaths = findLeftoverPaths(
-		uploadedFilePaths,
-		previousFilePaths
-	).map(p => path.posix.join(projectSlug, p))
-	if (removedPaths.length === 0) return
-
 	const { error } = await supabase.storage
 		.from(storageBucket)
-		.remove(removedPaths)
+		.remove(remotePaths.map(p => path.join(slug, `${p}.md`)))
 
-	if (error) core.warning(`Failed to delete leftover files: ${error.message}`)
+	if (error) core.warning(`Failed to delete files: ${error.message}`)
 }
