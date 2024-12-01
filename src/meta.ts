@@ -35,8 +35,9 @@ export function loadMetadata(metaPath: string): ProjectMetadata {
 
 		return metadata
 	} catch (error) {
-		core.warning(`Could not load metadata: ${error}`)
-		return {}
+		throw new Error(
+			`Could not load metadata: ${error instanceof Error ? error.message : 'Unknown Error'}`
+		)
 	}
 }
 
@@ -65,12 +66,9 @@ export async function getRepositoryDetails(
 			latest_version: latestVersion
 		}
 	} catch (error) {
-		core.warning(
+		throw new Error(
 			`Could not retrieve repository details: ${error instanceof Error ? error.message : 'Unknown Error'}`
 		)
-		return {
-			title: context.repo.repo
-		}
 	}
 }
 
