@@ -120,7 +120,8 @@ export async function fetchDatabaseEntry(
 		.eq('slug', slug)
 		.single()
 
-	if (error) core.warning(`Could not retrieve database entry: ${error.message}`)
+	if (error)
+		throw new Error(`Could not retrieve database entry: ${error.message}`)
 
 	return data
 }
