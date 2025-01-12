@@ -211,7 +211,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: RafalBerezin/supabase-upload-docs-action@v4
+      - uses: RafalBerezin/supabase-upload-docs-action@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           supabase-url: ${{ secrets.SUPABASE_URL }}
@@ -223,7 +223,7 @@ jobs:
 ### With Assets, Metadata and Custom Column Names
 
 ```yaml
-- uses: RafalBerezin/supabase-upload-docs-action@v4
+- uses: RafalBerezin/supabase-upload-docs-action@v1
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     supabase-url: ${{ secrets.SUPABASE_URL }}
@@ -318,7 +318,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: RafalBerezin/supabase-upload-docs-action@v4
+      - uses: RafalBerezin/supabase-upload-docs-action@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           supabase-url: ${{ secrets.SUPABASE_URL }}
