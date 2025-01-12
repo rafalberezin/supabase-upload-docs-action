@@ -17,20 +17,41 @@ inputs:
       'Supabase project API key with select, insert, update and delete
       permissions in the specified storage bucket.'
     required: true
-  docs-path:
-    description: 'Path to documentation directory'
+  articles-path:
+    description: 'Path to documentation articles directory.'
     required: true
-    default: './docs'
+    default: 'docs/articles'
+  assets-path:
+    description: 'Path to documentation assets directory.'
+    required: false
   meta-path:
     description: 'Path to metadata file. (.yml, .yaml or .json)'
     required: false
-  db-table:
-    description: 'Database table that stores project metadata'
-    required: false
   storage-bucket:
-    description: 'Supabase storage bucket that stores documentation files'
+    description: 'Supabase storage bucket that stores documentation files.'
     required: true
-    default: 'project-docs'
+  storage-articles-dir:
+    description: 'Path to directory that stores articles in the storage bucket.'
+    required: true
+    default: 'articles'
+  storage-assets-dir:
+    description:
+      "Path to directory that stores assets in the storage bucket. Required when
+      'assets-path' is specified."
+    required: false
+  trim-prefixes:
+    description:
+      'Whether to trim numeric prefixes like 01- from uploaded article file and
+      directory names. (boolean)'
+    required: true
+    default: 'true'
+  meta-table:
+    description: 'Database table that stores project metadata.'
+    required: false
+  column-mappings:
+    description:
+      'A string representation of yaml object that mapps generated column names
+      to custom ones. Map to _ to omit column.'
 
 runs:
   using: 'node20'

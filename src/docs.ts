@@ -1,82 +1,78 @@
 import fs from 'fs'
 import path from 'path/posix'
 import * as core from '@actions/core'
-import { processName } from './utils'
+import { hasFileChanged, processName } from './utils'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type {
-	ArticleMap,
-	ArticleMapChildren,
-	RemoteToLocalPaths
-} from './types'
+import type { Inputs, RemoteFilesMetadata, RemoteToLocalPaths } from './types'
 
-export function generateArticleMap(docsPath: string): ArticleMap {
-	function processDir(
-		localPath: string,
-		slugPath: string = ''
-	): ArticleMapChildren {
-		const files = fs.readdirSync(localPath)
-		const children: ArticleMapChildren = []
+export function diffRemoteFiles(
+	inputs: Inputs,
+	slug: string,
+	remoteFilesMetadata: RemoteFilesMetadata
+): { upload: RemoteToLocalPaths; remove: string[] } {
+	const uploadPaths: RemoteToLocalPaths = new Map()
+	const removePaths: string[] = []
+	const processedPaths = new Set<string>()
+
+	function processDir(localPath: string, remotePath: string) {
 		const slugs = {}
+		const files = fs.readdirSync(localPath)
 
 		files.forEach(file => {
 			const fullLocalPath = path.join(localPath, file)
+			if (inputs.metaPath === fullLocalPath) return
 			const stats = fs.statSync(fullLocalPath)
 
-			const { slug, title } = processName(file, slugs)
-			const fullSlugPath = path.join(slugPath, slug)
+			const slug = processName(file, inputs.trimPrefixes, slugs).slug
+			const fullRemotePath = path.join(remotePath, slug) + path.extname(file)
 
 			if (stats.isDirectory()) {
-				const dirChildren = processDir(fullLocalPath, fullSlugPath)
-				if (dirChildren.length <= 0) return
-
-				children.push({
-					type: 'directory',
-					title,
-					children: dirChildren
-				})
-			} else if (stats.isFile() && file.endsWith('.md')) {
-				children.push({
-					type: 'article',
-					title,
-					path: fullSlugPath,
-					_localPath: fullLocalPath
-				})
+				processDir(fullLocalPath, fullRemotePath)
+			} else if (stats.isFile()) {
+				processedPaths.add(fullRemotePath)
+				const expectedEtag = remoteFilesMetadata[fullRemotePath]
+				if (hasFileChanged(fullLocalPath, expectedEtag)) {
+					uploadPaths.set(fullRemotePath, fullLocalPath)
+				}
 			}
 		})
+	}
 
-		return children
+	processDir(inputs.articlesPath, path.join(slug, inputs.storageArticlesDir))
+	if (inputs.assetsPath)
+		processDir(inputs.assetsPath, path.join(slug, inputs.storageAssetsDir))
+
+	for (const remotePath in remoteFilesMetadata) {
+		if (!processedPaths.has(remotePath)) {
+			removePaths.push(remotePath)
+		}
 	}
 
 	return {
-		type: 'root',
-		children: processDir(docsPath)
+		upload: uploadPaths,
+		remove: removePaths
 	}
 }
 
-export async function manageDocumentStorage(
+export async function uploadFiles(
 	supabase: SupabaseClient,
 	storageBucket: string,
-	projectSlug: string,
 	uploadPaths: RemoteToLocalPaths
-): Promise<Set<string>> {
-	core.info('Starting file uploads')
+): Promise<string[]> {
+	if (uploadPaths.size === 0) {
+		core.info('No files to upload')
+		return []
+	}
+	core.info(`Starting uploads for ${uploadPaths.size} files`)
 
 	const results = await Promise.all(
-		Object.entries(uploadPaths).map(async entry => {
-			return await uploadFile(
-				supabase,
-				storageBucket,
-				projectSlug,
-				entry[1],
-				entry[0]
-			)
-		})
+		Array.from(uploadPaths.entries()).map(async ([remotePath, localPath]) =>
+			uploadFile(supabase, storageBucket, localPath, remotePath)
+		)
 	)
 
-	const failedUploadPaths = new Set(
-		results.filter(res => typeof res === 'string')
-	)
-	const failureCount = failedUploadPaths.size
+	const failedUploadPaths = results.filter(res => typeof res === 'string')
+	const failureCount = failedUploadPaths.length
 	const successCount = results.length - failureCount
 
 	core.info(
@@ -93,16 +89,14 @@ export async function manageDocumentStorage(
 async function uploadFile(
 	supabase: SupabaseClient,
 	storageBucket: string,
-	projectSlug: string,
 	localPath: string,
 	remotePath: string
 ): Promise<string | null> {
-	const fullRemotePath = `${projectSlug}/${remotePath}.md`
 	const fileContents = fs.readFileSync(localPath)
 
 	const { error } = await supabase.storage
 		.from(storageBucket)
-		.upload(fullRemotePath, fileContents, {
+		.upload(remotePath, fileContents, {
 			upsert: true
 		})
 
@@ -114,15 +108,15 @@ async function uploadFile(
 	return null
 }
 
-export async function deleteFiles(
+export async function removeFiles(
 	supabase: SupabaseClient,
 	storageBucket: string,
-	slug: string,
 	remotePaths: string[]
-): Promise<void> {
+) {
 	const { error } = await supabase.storage
 		.from(storageBucket)
-		.remove(remotePaths.map(p => path.join(slug, `${p}.md`)))
+		.remove(remotePaths)
 
-	if (error) core.warning(`Failed to delete files: ${error.message}`)
+	if (error) core.warning(`Failed to remove files: ${error.message}`)
+	else core.info(`Deleted ${remotePaths.length} files`)
 }

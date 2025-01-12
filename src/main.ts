@@ -2,100 +2,72 @@ import * as core from '@actions/core'
 import * as github from '@actions/github'
 import { createClient } from '@supabase/supabase-js'
 import {
-	findUploadPaths,
-	findLeftoverPaths,
-	generateSlug,
-	processName,
-	validateDocsPath,
-	prepareArticleMapForUpload,
-	flattenArticlePaths
-} from './utils'
-import {
-	buildDatabaseEntry,
-	fetchDatabaseEntry,
-	fetchRemoteFilesMetadata,
-	getRepositoryDetails,
 	loadMetadata,
+	fetchRepositoryDetails,
+	fetchRemoteFilesMetadata,
+	fetchDatabaseEntry,
+	generateArticleMap,
+	buildDatabaseEntry,
 	upsertDatabaseEntry
 } from './meta'
-import { deleteFiles, generateArticleMap, manageDocumentStorage } from './docs'
+import { getInputs, processProjectName } from './utils'
+import { removeFiles, diffRemoteFiles, uploadFiles } from './docs'
 
 export async function run() {
 	try {
-		const githubToken = core.getInput('github-token', { required: true })
-		const supabaseUrl = core.getInput('supabase-url', { required: true })
-		const supabaseKey = core.getInput('supabase-key', { required: true })
-		const docsPath = core.getInput('docs-path', { required: true })
-		const metaPath = core.getInput('meta-path')
-		const dbTable = core.getInput('db-table')
-		const storageBucket = core.getInput('storage-bucket', { required: true })
+		const inputs = getInputs()
 
-		validateDocsPath(docsPath)
+		const octokit = github.getOctokit(inputs.githubToken)
+		const supabase = createClient(inputs.supabaseUrl, inputs.supabaseKey)
 
-		const supabase = createClient(supabaseUrl, supabaseKey)
-		const octokit = github.getOctokit(githubToken)
+		const projectMetadata = loadMetadata(inputs.metaPath, inputs.columnMappings)
+		const repoDetails = await fetchRepositoryDetails(octokit, github.context)
 
-		const repoDetails = await getRepositoryDetails(octokit, github.context)
-		const projectMetadata = loadMetadata(metaPath)
+		const { slug, title } = processProjectName(projectMetadata, repoDetails)
 
-		const slug =
-			projectMetadata.slug ??
-			generateSlug(projectMetadata.title ?? repoDetails.title)
-
-		const localArticleMap = generateArticleMap(docsPath)
 		const remoteFilesMetadata = await fetchRemoteFilesMetadata(
 			supabase,
-			storageBucket,
+			inputs,
 			slug
 		)
 
-		const articlePaths = flattenArticlePaths(localArticleMap)
+		const filesDiff = diffRemoteFiles(inputs, slug, remoteFilesMetadata)
 
-		const uploadPaths = await findUploadPaths(articlePaths, remoteFilesMetadata)
-		const failedUploadPaths = await manageDocumentStorage(
+		const failedUploadPaths = await uploadFiles(
 			supabase,
-			storageBucket,
-			slug,
-			uploadPaths
+			inputs.storageBucket,
+			filesDiff.upload
 		)
+		const pathsToDelete = filesDiff.remove.concat(failedUploadPaths)
 
-		const leftoverPaths = findLeftoverPaths(
-			articlePaths,
-			remoteFilesMetadata,
-			failedUploadPaths
-		)
-		if (leftoverPaths.length > 0)
-			await deleteFiles(supabase, storageBucket, slug, leftoverPaths)
+		if (pathsToDelete.length > 0)
+			await removeFiles(supabase, inputs.storageBucket, pathsToDelete)
+		else core.info('No files to remove')
 
-		if (dbTable.length === 0) {
-			core.info('Upload completed successfully (without metadata)')
+		if (!inputs.metaTable) {
+			core.info('Upload completed successfully (files only)')
 			return
 		}
 
 		core.info(`Uploading metadata for project: ${slug}`)
 
-		const title =
-			projectMetadata.title ??
-			processName(projectMetadata.slug ?? repoDetails.title).title
-		const filteredArticleMap = prepareArticleMapForUpload(
-			localArticleMap,
-			failedUploadPaths
-		)
-
+		const articleMap = generateArticleMap(inputs, slug, failedUploadPaths)
 		const existingDatabaseEntry = await fetchDatabaseEntry(
 			supabase,
-			dbTable,
-			slug
+			inputs.metaTable,
+			slug,
+			inputs.columnMappings
 		)
 		const newDatabaseEntry = buildDatabaseEntry(
 			title,
 			slug,
-			filteredArticleMap,
+			articleMap,
 			projectMetadata,
 			repoDetails,
-			existingDatabaseEntry
+			existingDatabaseEntry,
+			inputs.columnMappings
 		)
-		await upsertDatabaseEntry(supabase, dbTable, newDatabaseEntry)
+		await upsertDatabaseEntry(supabase, inputs.metaTable, newDatabaseEntry)
 
 		core.info('Upload completed successfully')
 	} catch (error) {
@@ -103,7 +75,7 @@ export async function run() {
 			core.debug(error.stack || 'No stack trace')
 			core.setFailed(error.message)
 		} else {
-			core.setFailed('Unknown error')
+			core.setFailed('Unknown Error')
 		}
 	}
 }

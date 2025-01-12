@@ -1,8 +1,28 @@
+export interface Inputs {
+	githubToken: string
+	supabaseUrl: string
+	supabaseKey: string
+
+	articlesPath: string
+	assetsPath: string
+	metaPath: string
+
+	storageBucket: string
+	storageArticlesDir: string
+	storageAssetsDir: string
+
+	trimPrefixes: boolean
+
+	metaTable: string
+	columnMappings: ColumnMappings
+}
+
+export type ColumnMappings = Record<string, string>
+
 export interface ProjectMetadata {
+	data: Record<string, unknown>
 	slug?: string
 	title?: string
-	description?: string
-	[key: string]: unknown
 }
 
 export interface RepositoryDetails {
@@ -11,19 +31,16 @@ export interface RepositoryDetails {
 	license?: string
 	source?: string
 	latest_version?: string
+	versions: string[]
 }
 
-export interface DatabaseEntry {
-	slug: string
-	title: string
-	description?: string
-	license?: string
-	source?: string
-	latest_version?: string
-	versions?: string[]
-	articles?: ArticleMap
-	[key: string]: unknown
-}
+export type RemoteFilesMetadata = Record<string, string> // remotePath to eTag
+
+export type SlugTracker = Record<string, number>
+
+export type RemoteToLocalPaths = Map<string, string>
+
+export type DatabaseEntry = Record<string, unknown>
 
 export interface ArticleMap {
 	type: 'root'
@@ -41,12 +58,5 @@ export interface Directory {
 export interface Article {
 	type: 'article'
 	title: string
-	path: string // remotePath
-	_localPath?: string
+	path: string
 }
-
-export type SlugTracker = Record<string, number>
-
-export type RemoteFilesMetadata = Record<string, string> // remotePath to eTag
-
-export type RemoteToLocalPaths = Record<string, string>
