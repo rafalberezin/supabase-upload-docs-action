@@ -52223,7 +52223,7 @@ function generateArticleMap(inputs, slug, failedUploadPaths) {
                 return;
             const stats = fs_1.default.statSync(fullLocalPath);
             const { slug, title } = (0, utils_1.processName)(file, inputs.trimPrefixes, slugs);
-            const fullRemotePath = posix_1.default.join(remotePath, slug);
+            const fullRemotePath = posix_1.default.join(remotePath, slug) + posix_1.default.extname(file);
             if (stats.isDirectory()) {
                 const dirChildren = processDir(fullLocalPath, fullRemotePath);
                 if (dirChildren.length === 0)
@@ -52235,7 +52235,7 @@ function generateArticleMap(inputs, slug, failedUploadPaths) {
                 });
             }
             else if (stats.isFile()) {
-                if (failedUploadPaths.includes(fullRemotePath + posix_1.default.extname(file)))
+                if (failedUploadPaths.includes(fullRemotePath))
                     return;
                 children.push({
                     type: 'article',
