@@ -1,6 +1,6 @@
 # Supabase Upload Docs Action
 
-![GitHub License](https://img.shields.io/github/license/RafalBerezin/supabase-upload-docs-action?style=for-the-badge&logo=github)
+![GitHub License](https://img.shields.io/github/license/rafalberezin/supabase-upload-docs-action?style=for-the-badge&logo=github)
 
 A GitHub Action that automated the process of uploading and managing project
 documentation in Supabase. This action handles both file storage and metadata
@@ -25,7 +25,7 @@ management, making it easy to maintain documentation alongside your codebase.
 
 ```yaml
 - uses: actions/checkout@v4
-- uses: RafalBerezin/supabase-upload-docs-action@v1
+- uses: rafalberezin/supabase-upload-docs-action@v1
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     supabase-url: ${{ secrets.SUPABASE_URL }}
@@ -211,7 +211,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: RafalBerezin/supabase-upload-docs-action@v1
+      - uses: rafalberezin/supabase-upload-docs-action@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           supabase-url: ${{ secrets.SUPABASE_URL }}
@@ -223,7 +223,7 @@ jobs:
 ### With Assets, Metadata and Custom Column Names
 
 ```yaml
-- uses: RafalBerezin/supabase-upload-docs-action@v1
+- uses: rafalberezin/supabase-upload-docs-action@v1
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     supabase-url: ${{ secrets.SUPABASE_URL }}
@@ -318,7 +318,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: RafalBerezin/supabase-upload-docs-action@v1
+      - uses: rafalberezin/supabase-upload-docs-action@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           supabase-url: ${{ secrets.SUPABASE_URL }}
