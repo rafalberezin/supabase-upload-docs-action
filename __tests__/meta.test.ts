@@ -288,12 +288,12 @@ describe('Metadata functions', () => {
 					{
 						type: 'article',
 						title: 'Unchanged',
-						path: 'slug/articles/unchanged'
+						path: 'slug/articles/unchanged.md'
 					},
 					{
 						type: 'article',
 						title: 'Changed',
-						path: 'slug/articles/changed'
+						path: 'slug/articles/changed.md'
 					},
 					{
 						type: 'directory',
@@ -302,7 +302,7 @@ describe('Metadata functions', () => {
 							{
 								type: 'article',
 								title: 'New',
-								path: 'slug/articles/nested/new'
+								path: 'slug/articles/nested/new.md'
 							}
 						]
 					}

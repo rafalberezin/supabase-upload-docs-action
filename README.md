@@ -10,7 +10,7 @@ management, making it easy to maintain documentation alongside your codebase.
 
 - Uploads documentation articles and assets to Supabase Storage
 - Optional metadata management in Supabase Database
-- Generates ordered, hierarchical article maps
+- Generates ordered, hierarchical article map trees
 - Automatically generates slugs and titles from file names
 - Handles file updates efficiently using ETags
 - Supports custom metadata fields
@@ -62,7 +62,6 @@ structure:
 ```
 
 The paths are generated from local file paths, with optional prefix trimming.
-Article paths in the generated article map exclude file extensions.
 
 ## Metadata Management
 

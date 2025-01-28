@@ -155,7 +155,7 @@ export function generateArticleMap(
 			const stats = fs.statSync(fullLocalPath)
 
 			const { slug, title } = processName(file, inputs.trimPrefixes, slugs)
-			const fullRemotePath = path.join(remotePath, slug)
+			const fullRemotePath = path.join(remotePath, slug) + path.extname(file)
 
 			if (stats.isDirectory()) {
 				const dirChildren = processDir(fullLocalPath, fullRemotePath)
@@ -167,8 +167,7 @@ export function generateArticleMap(
 					children: dirChildren
 				})
 			} else if (stats.isFile()) {
-				if (failedUploadPaths.includes(fullRemotePath + path.extname(file)))
-					return
+				if (failedUploadPaths.includes(fullRemotePath)) return
 
 				children.push({
 					type: 'article',
