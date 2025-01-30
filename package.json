@@ -4,13 +4,13 @@
 	"description": "Upload project documentation to supabase storage and database",
 	"author": "Rafał Berezin",
 	"license": "MIT",
-	"homepage": "https://github.com/RafalBerezin/supabase-upload-docs-action",
+	"homepage": "https://github.com/rafalberezin/supabase-upload-docs-action",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/RafalBerezin/supabase-upload-docs-action.git"
+		"url": "git+https://github.com/rafalberezin/supabase-upload-docs-action.git"
 	},
 	"bugs": {
-		"url": "https://github.com/RafalBerezin/supabase-upload-docs-action/issues"
+		"url": "https://github.com/rafalberezin/supabase-upload-docs-action/issues"
 	},
 	"exports": {
 		".": "./dist/index.js"
