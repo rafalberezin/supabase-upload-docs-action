@@ -220,5 +220,5 @@ For large documentation sets, monitor the actions's performance:
   new feature, or just want to help improve the action, check the contributing
   guide.
 - [v2 Roadmap](./08-v2-roadmap.md) - See plans for the future.
-- [How I Use It](./08-how-i-use-it.md) - If you're interested in my personal
+- [How I Use It](./09-how-i-use-it.md) - If you're interested in my personal
   insight on how I use it and what guided my decisions on the action's design

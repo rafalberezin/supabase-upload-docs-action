@@ -72,5 +72,5 @@ A detailed migration guide will be provided when v2 is released.
 
 ## Next
 
-- [How I Use It](./08-how-i-use-it.md) - If you're interested in my personal
+- [How I Use It](./09-how-i-use-it.md) - If you're interested in my personal
   insight on how I use it and what guided my decisions on the action's design.
