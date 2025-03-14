@@ -1,0 +1,71 @@
+name: Documentation Request
+description: Suggest an improvement or report an issue in the documentation.
+title: '[DOCS]: '
+labels:
+  - documentation
+
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for helping to improve the documentation!
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Please confirm the following before submitting
+      options:
+        - label: This issue has not already been reported
+          required: true
+        - label: The existing documentation does not already cover this request
+          required: true
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: What type of documentation change is this?
+      multiple: false
+      options:
+        - Typo or Grammar Fix
+        - Missing Information
+        - Outdated Content
+        - Request New Section
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Issue Description
+      description: Describe the issue or the improvement you're suggesting.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Suggest Fix or Content
+      description: If you have a solution in mind, describe it here.
+      placeholder: Describe the changes you suggest...
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: |
+        Add any other relevant context, screenshots, or supporting details.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description:
+        By submitting this issue, you agree to follow our [Code of
+        Conduct](https://github.com/rafalberezin/supabase-upload-docs-action/blob/master/CODE_OF_CONDUCT.md)
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true

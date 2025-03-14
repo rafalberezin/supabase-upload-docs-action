@@ -1,0 +1,119 @@
+name: Bug Report
+description: Report a problem with Supabase Upload Docs Action
+title: '[BUG]: '
+labels:
+  - bug
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Please confirm the following before submitting
+      description: |
+        Make sure you have completed all the following steps before reporting a bug.
+        See the [troubleshooting guide](https://rafalberezin.dev/projects/supabase-upload-docs-action/troubleshooting) for common issues.
+      options:
+        - label: I have read the documentation
+          required: true
+        - label: The issue is with the action itself, not my configuration
+          required: true
+        - label: I am using the latest version of the action
+          required: true
+        - label: I have checked that this bug has not already been reported
+          required: true
+
+  - type: input
+    id: action-version
+    attributes:
+      label: Action Version
+      description: What version of the action are you using? (e.g., `v1.2.3`).
+      placeholder: v1.x.x
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: Describe the issue...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description:
+        A clear and concise description of what you expected to happen.
+      placeholder: The action should...
+    validations:
+      required: true
+
+  - type: textarea
+    id: workflow
+    attributes:
+      label: Workflow Configuration
+      description:
+        Please provide your workflow configuration that uses the action.
+      placeholder: |
+        name: Upload Documentation
+        on:
+          push:
+            branches: [master, main]
+
+        jobs:
+          docs:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+              - uses: rafalberezin/supabase-upload-docs-action@v1
+                with:
+                  # Your configuration...
+      render: yaml
+    validations:
+      required: true
+
+  - type: dropdown
+    id: runner
+    attributes:
+      label: GitHub Runner
+      description: What GitHub runner are you using?
+      multiple: false
+      options:
+        - ubuntu-latest
+        - windows-latest
+        - macos-latest
+        - Other (please specify in Additional Context)
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: |
+        Any other context about the problem such as:
+
+        - Other configurations (Supabase, etc.)
+        - Your documentation directory structure
+        - Relevant logs
+        - Screenshots (if applicable)
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description:
+        By submitting this issue, you agree to follow our [Code of
+        Conduct](https://github.com/rafalberezin/supabase-upload-docs-action/blob/master/CODE_OF_CONDUCT.md)
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true
