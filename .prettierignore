@@ -2,3 +2,5 @@ node_modules/
 dist/
 coverage/
 .pnpm-store/
+
+CODE_OF_CONDUCT.md
