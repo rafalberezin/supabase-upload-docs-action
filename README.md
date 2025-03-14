@@ -3,8 +3,12 @@
 ![GitHub License](https://img.shields.io/github/license/rafalberezin/supabase-upload-docs-action?style=for-the-badge&logo=github)
 
 A GitHub Action that automated the process of uploading and managing project
-documentation in Supabase. This action handles both file storage and metadata
-management, making it easy to maintain documentation alongside your codebase.
+documentation in Supabase. This action handles both file storage and git
+metadata management, making it easy to maintain documentation alongside your
+codebase.
+
+Full documentation:
+[Read the Docs](https://rafalberezin.dev/projects/supabase-upload-docs-action)
 
 ## Features
 
