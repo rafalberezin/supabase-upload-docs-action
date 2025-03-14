@@ -22,9 +22,7 @@ jobs:
           supabase-url: ${{ secrets.SUPABASE_URL }}
           supabase-key: ${{ secrets.SUPABASE_KEY }}
           articles-path: docs/articles
-          assets-path: docs/assets
           meta-path: docs/meta.yml
           storage-bucket: projects
           storage-articles-dir: articles
-          storage-assets-dir: assets
           meta-table: projects
