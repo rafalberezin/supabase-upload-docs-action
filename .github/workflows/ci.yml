@@ -4,9 +4,21 @@ on:
   pull_request:
     branches:
       - master
+    paths:
+      - src/**
+      - __tests__/**
+      - .github/workflows/ci.yml
+      - pnpm-lock.yaml
+      - package.json
   push:
     branches:
       - master
+    paths:
+      - src/**
+      - __tests__/**
+      - .github/workflows/ci.yml
+      - pnpm-lock.yaml
+      - package.json
 
 permissions:
   contents: read
