@@ -71,3 +71,14 @@ If you're still experiencing issues after trying the solutions above:
    to see if your problem has been reported.
 2. If not,
    [report the issue](https://github.com/rafalberezin/supabase-upload-docs-action/issues/new?template=bug_report.yml).
+
+## Next
+
+- [Best Practices](./06-best-practices.md) - If you're unsure how to organize
+  your documentation and configure the action, check my recommendations.
+- [Contributing](./07-contributing.md) - If you found a bug, have an idea for a
+  new feature, or just want to help improve the action, check the contributing
+  guide.
+- [v2 Roadmap](./08-v2-roadmap.md) - See plans for the future.
+- [How I Use It](./08-how-i-use-it.md) - If you're interested in my personal
+  insight on how I use it and what guided my decisions on the action's design.
