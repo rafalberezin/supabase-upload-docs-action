@@ -1,0 +1,5 @@
+featured: true
+color: var(--green)
+tags:
+  Supabase: var(--green)
+  GitHub: var(--lavender)
